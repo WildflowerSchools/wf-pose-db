@@ -16,7 +16,7 @@ from .models.pose_3d import Pose3d
 class PoseHandle:
     def __init__(self, db_uri: str = None):
         if db_uri is None:
-            db_uri = pose_engine.config.Settings().MONGO_POSE_URI
+            db_uri = pose_db_io.config.Settings().MONGO_POSE_URI
 
         self.client: MongoClient = MongoClient(db_uri, uuidRepresentation="standard")
         self.db: MongoDatabase = self.client["poses"]
