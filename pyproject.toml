@@ -1,18 +1,18 @@
 [project]
-name = "wf-project-name"
+name = "wf-pose-db-io"
 dynamic = ["version"]
 
 [tool.poetry]
-name = "wf-project-name"
+name = "wf-pose-db-io"
 version = "0.1.0"
-description = ""
-authors = ["NAME <EMAIL>"]
-maintainers = ["NAME <EMAIL>"]
+description = "Tools for working with data in Wildflower's pose database"
+authors = ["btalberg <ben.talberg@gmail.com>", "Theodore Quinn <ted.quinn@wildflowerschools.org>"]
+maintainers = ["btalberg <ben.talberg@gmail.com>", "Theodore Quinn <ted.quinn@wildflowerschools.org>"]
 readme = "README.md"
 keywords = []
-repository = "<<GITHUB URL>>"
+repository = "https://github.com/WildflowerSchools/wf-pose-db-io>"
 license = "MIT"
-packages = [{include = "MODULE_NAME"}]
+packages = [{include = "pose_db_io"}]
 classifiers = [
     "Intended Audience :: Developers",
     "License :: OSI Approved :: MIT License",

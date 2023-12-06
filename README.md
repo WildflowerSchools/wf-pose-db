@@ -1,10 +1,10 @@
-# MODULE_NAME
+# pose_db_io
 
-SHORT_DESCRIPTION
+Tools for working with data in Wildflower's pose database
 
 ## Installation
 
-`pip install PYPI_PACKAGE_NAME`
+`pip install wf-pose-db-io`
 
 ## Development
 
