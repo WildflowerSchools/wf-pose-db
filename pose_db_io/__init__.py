@@ -4,8 +4,9 @@ from pathlib import Path
 import toml
 
 from .core import *
+from .handle import *
 
-PROJECT_NAME = 'wf-project-name' # Keep this synced with project name in pyproject.toml
+PROJECT_NAME = 'wf-pose-db-io' # Keep this synced with project name in pyproject.toml
 
 def get_version() -> str:
     try:
