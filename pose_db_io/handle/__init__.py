@@ -1,1 +1,1 @@
-from .handle import Pose2dHandle
+from .handle import PoseHandle
