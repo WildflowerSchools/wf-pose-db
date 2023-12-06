@@ -5,8 +5,8 @@ from pymongo.collection import Collection as MongoCollection
 from pymongo.database import Database as MongoDatabase
 from pymongo.errors import BulkWriteError
 
-import pose_engine.config
-from pose_engine.log import logger
+import pose_db_io.config
+from pose_db_io.log import logger
 
 from .models.pose_2d import Pose2d
 
@@ -14,7 +14,7 @@ from .models.pose_2d import Pose2d
 class Pose2dHandle:
     def __init__(self, db_uri: str = None):
         if db_uri is None:
-            db_uri = pose_engine.config.Settings().MONGO_POSE2D_URI
+            db_uri = pose_engine.config.Settings().MONGO_POSE_URI
 
         self.client: MongoClient = MongoClient(db_uri, uuidRepresentation="standard")
         self.db: MongoDatabase = self.client["poses"]
