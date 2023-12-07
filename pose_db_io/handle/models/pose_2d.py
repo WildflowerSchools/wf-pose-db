@@ -55,17 +55,15 @@ class DetectorModelConfigEnum(Enum):
 
 
 class DetectorModelCheckpointEnum(Enum):
-    rtmdet_nano_8xb32_100e_coco_obj365_person_05d8511e = (
-        "rtmdet_nano_8xb32-100e_coco-obj365-person-05d8511e"
-    )
-    rtmdet_m_8xb32_100e_coco_obj365_person_235e8209 = (
-        "rtmdet_m_8xb32-100e_coco-obj365-person-235e8209"
-    )
+    rtmdet_nano_8xb32_100e_coco_obj365_person_05d8511e = "rtmdet_nano_8xb32-100e_coco-obj365-person-05d8511e"
+    rtmdet_m_8xb32_100e_coco_obj365_person_235e8209 = "rtmdet_m_8xb32-100e_coco-obj365-person-235e8209"
+
 
 # def coerce_to_uuid(uuid_like_object):
 #     return uuid.UUID(uuid_like_object)
 
 # FlexibleUUID = Annotated[Union[UUID4, str], AfterValidator(double), AfterValidator(check_squares)]
+
 
 class Pose2dMetadataCommon(BaseModel):
     model_config = ConfigDict(populate_by_name=True, use_enum_values=True)
@@ -104,9 +102,7 @@ class PoseOutput(BaseModel):
 
 
 class BoundingBoxOutput(BaseModel):
-    bbox: Tuple[
-        RoundedFloat, RoundedFloat, RoundedFloat, RoundedFloat, RoundedFloat
-    ]  # (x, y, x|w, y|h, score)
+    bbox: Tuple[RoundedFloat, RoundedFloat, RoundedFloat, RoundedFloat, RoundedFloat]  # (x, y, x|w, y|h, score)
 
 
 class Pose2d(BaseModel):
