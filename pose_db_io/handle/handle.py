@@ -125,7 +125,7 @@ class PoseHandle:
             start=None,
             end=None
     ):
-        query_dict = generate_pose_2d_query_dict(
+        query_dict = self.generate_pose_2d_query_dict(
             inference_run_ids=inference_run_ids,
             environment_id=environment_id,
             camera_ids=camera_ids,
@@ -134,6 +134,38 @@ class PoseHandle:
         )
         find_iterator = self.poses_2d_collection.find(query_dict)
         return find_iterator
+
+    @staticmethod
+    def generate_pose_2d_query_dict(
+            inference_run_ids: Optional[Union[List[str], List[uuid.UUID]]] = None,
+            environment_id: Optional[Union[str, uuid.UUID]] = None,
+            camera_ids: Optional[Union[List[str], List[uuid.UUID]]] = None,
+            start: Optional[datetime.datetime] = None,
+            end: Optional[datetime.datetime] = None
+    ):
+        database_tzinfo = datetime.timezone.utc
+
+        if start is not None and start.tzinfo is None:
+            raise ValueError("generate_pose_2d_query_dict 'start' attribute must be None or timezone aware datetime object")
+
+        if end is not None and end.tzinfo is None:
+            raise ValueError("generate_pose_2d_query_dict 'end' attribute must be None or timezone aware datetime object")
+
+        query_dict = dict()
+        if inference_run_ids is not None:
+            query_dict['metadata.inference_run_id'] = {"$in": [uuid.UUID(inference_run_id) for inference_run_id in inference_run_ids]}
+        if environment_id is not None:
+            query_dict['metadata.environment_id'] = uuid.UUID(environment_id)
+        if camera_ids is not None:
+            query_dict['metadata.camera_device_id'] = {"$in": [uuid.UUID(camera_id) for camera_id in camera_ids]}
+        if start is not None or end is not None:
+            timestamp_qualifier_dict = dict()
+            if start is not None:
+                timestamp_qualifier_dict['$gte'] = start.astimezone(database_tzinfo)
+            if end is not None:
+                timestamp_qualifier_dict['$lt'] = end.astimezone(database_tzinfo)
+            query_dict['timestamp'] = timestamp_qualifier_dict
+        return query_dict
 
     def insert_poses_3d(self, pose_3d_batch: List[Pose3d]):
         bulk_requests = list(map(lambda p: InsertOne(p.model_dump()), pose_3d_batch))
