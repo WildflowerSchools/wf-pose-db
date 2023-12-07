@@ -5,10 +5,10 @@ publish: build
     poetry publish
 
 format:
-    black MODULE_NAME
+    black pose_db_io
 
 lint:
-    pylint MODULE_NAME
+    pylint pose_db_io
 
 test:
     pytest tests/

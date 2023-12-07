@@ -17,16 +17,19 @@ class KeypointsFormatEnum(Enum):
     halpe_133 = "halpe-133"
     halpe_136 = "halpe-136"
 
+
 class PosePairScoreDistanceMethodEnum(Enum):
-    pixels = 'pixels'
-    image_frac = 'image_frac'
-    threed = '3d'
+    pixels = "pixels"
+    image_frac = "image_frac"
+    threed = "3d"
+
 
 def rounded_float(v: float) -> float:
     return round(v, 3)
 
 
 RoundedFloat = Annotated[float, AfterValidator(rounded_float)]
+
 
 class Pose3dMetadata(BaseModel):
     model_config = ConfigDict(populate_by_name=True, use_enum_values=True)
@@ -50,15 +53,14 @@ class Pose3dMetadata(BaseModel):
     pose_pair_score_distance_method: PosePairScoreDistanceMethodEnum
     pose_3d_graph_initial_edge_threshold: int
     pose_3d_graph_max_dispersion: RoundedFloat
+
     @field_serializer("classroom_date")
     def serialize_classroom_date(self, dt: date, _info):
         return dt.strftime("%Y-%m-%d")
 
 
 class Pose3dOutput(BaseModel):
-    keypoints: Tuple[
-        Tuple[RoundedFloat, RoundedFloat, RoundedFloat], ...
-    ]  # ((x, y, z), ...)
+    keypoints: Tuple[Tuple[RoundedFloat, RoundedFloat, RoundedFloat], ...]  # ((x, y, z), ...)
 
 
 class Pose3d(BaseModel):
