@@ -69,13 +69,14 @@ class PoseHandle:
             bounding_box_array = np.asarray(pose_2d_raw['bbox']['bbox'])
             bounding_box = bounding_box_array[:4]
             bounding_box_quality = bounding_box_array[4]
+            pose_quality = np.nanmean(keypoint_quality)
             poses_2d_list.append(collections.OrderedDict((
                 ('pose_2d_id', str(pose_2d_raw['id'])),
                 ('timestamp', pose_2d_raw['timestamp']),
                 ('camera_id', str(pose_2d_raw['metadata']['camera_device_id'])),
                 ('keypoint_coordinates_2d', keypoint_coordinates),
                 ('keypoint_quality_2d', keypoint_quality),
-                ('pose_quality', None),
+                ('pose_quality_2d', pose_quality),
                 ('keypoint_visibility_2d', keypoint_visibility),
                 ('bounding_box', bounding_box),
                 ('bounding_box_quality', bounding_box_quality),
@@ -89,7 +90,10 @@ class PoseHandle:
         if len(poses_2d_list) > 0:
             poses_2d = (
                 pd.DataFrame(poses_2d_list)
-                .sort_values('timestamp')
+                .sort_values([
+                    'timestamp',
+                    'camera_id'
+                ])
                 .set_index('pose_2d_id')
             )
         return poses_2d
