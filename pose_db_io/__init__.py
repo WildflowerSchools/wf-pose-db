@@ -6,10 +6,12 @@ import toml
 from .core import *
 from .handle import *
 
+PROJECT_NAME = 'wf-pose-db-io'
+
 
 def get_version() -> str:
     try:
-        version: str = importlib.metadata.version(__package__ or __name__)
+        version: str = importlib.metadata.version(PROJECT_NAME)
     except importlib.metadata.PackageNotFoundError:
         path = Path(__file__).resolve().parents[1] / "pyproject.toml"
         pyproject = toml.load(str(path))
