@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional, Union
 import datetime
 import uuid
 import collections
@@ -11,23 +11,24 @@ from pymongo.collection import Collection as MongoCollection
 from pymongo.database import Database as MongoDatabase
 from pymongo.errors import BulkWriteError
 
-import pose_db_io.config
+from pose_db_io.config import Settings
 from pose_db_io.log import logger
 
 from .models.pose_2d import Pose2d
 from .models.pose_3d import Pose3d
 
 
-
 class PoseHandle:
     def __init__(self, db_uri: str = None):
         if db_uri is None:
-            db_uri = pose_db_io.config.Settings().MONGO_POSE_URI
+            db_uri = Settings().MONGO_POSE_URI
 
-        self.client: MongoClient = MongoClient(db_uri, uuidRepresentation="standard")
-        self.db: MongoDatabase = self.client["poses"]
-        self.poses_2d_collection: MongoCollection = self.db["poses_2d"]
-        self.poses_3d_collection: MongoCollection = self.db["poses_3d"]
+        self.client: MongoClient = MongoClient(
+            db_uri, uuidRepresentation="standard", tz_aware=True
+        )
+        self.db: MongoDatabase = self.client.get_database("poses")
+        self.poses_2d_collection: MongoCollection = self.db.get_collection("poses_2d")
+        self.poses_3d_collection: MongoCollection = self.db.get_collection("poses_3d")
 
     def insert_poses_2d(self, pose_2d_batch: List[Pose2d]):
         bulk_requests = list(map(lambda p: InsertOne(p.model_dump()), pose_2d_batch))
@@ -45,23 +46,19 @@ class PoseHandle:
             )
 
     def fetch_poses_2d(
-        self,
-        inference_run_ids=None,
-        environment_id=None,
-        camera_ids=None,
-        start=None,
-        end=None,
-        database_tzinfo=None,
+            self,
+            inference_run_ids=None,
+            environment_id=None,
+            camera_ids=None,
+            start=None,
+            end=None,
     ):
-        if database_tzinfo is None:
-            database_tzinfo = datetime.timezone.utc
         find_iterator = self.generate_poses_2d_find_iterator(
             inference_run_ids=inference_run_ids,
             environment_id=environment_id,
             camera_ids=camera_ids,
             start=start,
             end=end,
-            database_tzinfo=database_tzinfo,
         )
         poses_2d_list = list()
         for pose_2d_raw in find_iterator:
@@ -74,7 +71,7 @@ class PoseHandle:
             bounding_box_quality = bounding_box_array[4]
             poses_2d_list.append(collections.OrderedDict((
                 ('pose_2d_id', str(pose_2d_raw['id'])),
-                ('timestamp', pose_2d_raw['timestamp'].replace(tzinfo=database_tzinfo).astimezone(datetime.timezone.utc)),
+                ('timestamp', pose_2d_raw['timestamp']),
                 ('camera_id', str(pose_2d_raw['metadata']['camera_device_id'])),
                 ('keypoint_coordinates_2d', keypoint_coordinates),
                 ('keypoint_quality_2d', keypoint_quality),
@@ -85,33 +82,32 @@ class PoseHandle:
                 ('bounding_box_format', pose_2d_raw['metadata']['bounding_box_format']),
                 ('keypoints_format', pose_2d_raw['metadata']['keypoints_format']),
                 ('inference_run_id', str(pose_2d_raw['metadata']['inference_run_id'])),
-                ('inference_run_created_at', pose_2d_raw['metadata']['inference_run_created_at'].replace(tzinfo=database_tzinfo).astimezone(datetime.timezone.utc)),
+                ('inference_run_created_at', pose_2d_raw['metadata']['inference_run_created_at']),
             )))
-        poses_2d = (
-            pd.DataFrame(poses_2d_list)
-            .sort_values('timestamp')
-            .set_index('pose_2d_id')
-        )
+
+        poses_2d = None
+        if len(poses_2d_list) > 0:
+            poses_2d = (
+                pd.DataFrame(poses_2d_list)
+                .sort_values('timestamp')
+                .set_index('pose_2d_id')
+            )
         return poses_2d
 
     def find_poses_2d(
-        self,
-        inference_run_ids=None,
-        environment_id=None,
-        camera_ids=None,
-        start=None,
-        end=None,
-        database_tzinfo=None,
+            self,
+            inference_run_ids=None,
+            environment_id=None,
+            camera_ids=None,
+            start=None,
+            end=None,
     ):
-        if database_tzinfo is None:
-            database_tzinfo = datetime.timezone.utc
         find_iterator = self.generate_poses_2d_find_iterator(
             inference_run_ids=inference_run_ids,
             environment_id=environment_id,
             camera_ids=camera_ids,
             start=start,
             end=end,
-            database_tzinfo=database_tzinfo,
         )
 
         poses_2d_list = list()
@@ -122,23 +118,19 @@ class PoseHandle:
         return poses_2d_list
 
     def generate_poses_2d_find_iterator(
-        self,
-        inference_run_ids=None,
-        environment_id=None,
-        camera_ids=None,
-        start=None,
-        end=None,
-        database_tzinfo=None,
+            self,
+            inference_run_ids=None,
+            environment_id=None,
+            camera_ids=None,
+            start=None,
+            end=None
     ):
-        if database_tzinfo is None:
-            database_tzinfo = datetime.timezone.utc
         query_dict = generate_pose_2d_query_dict(
             inference_run_ids=inference_run_ids,
             environment_id=environment_id,
             camera_ids=camera_ids,
             start=start,
             end=end,
-            database_tzinfo=database_tzinfo,
         )
         find_iterator = self.poses_2d_collection.find(query_dict)
         return find_iterator
@@ -165,16 +157,22 @@ class PoseHandle:
     def __del__(self):
         self.cleanup()
 
+
 def generate_pose_2d_query_dict(
-    inference_run_ids=None,
-    environment_id=None,
-    camera_ids=None,
-    start=None,
-    end=None,
-    database_tzinfo=None,
+        inference_run_ids: Optional[Union[List[str], List[uuid.UUID]]] = None,
+        environment_id: Optional[Union[str, uuid.UUID]] = None,
+        camera_ids: Optional[Union[List[str], List[uuid.UUID]]] = None,
+        start: Optional[datetime.datetime] = None,
+        end: Optional[datetime.datetime] = None
 ):
-    if database_tzinfo is None:
-        database_tzinfo = datetime.timezone.utc
+    database_tzinfo = datetime.timezone.utc
+
+    if start is not None and start.tzinfo is None:
+        raise ValueError("generate_pose_2d_query_dict 'start' attribute must be None or timezone aware datetime object")
+
+    if end is not None and end.tzinfo is None:
+        raise ValueError("generate_pose_2d_query_dict 'end' attribute must be None or timezone aware datetime object")
+
     query_dict = dict()
     if inference_run_ids is not None:
         query_dict['metadata.inference_run_id'] = {"$in": [uuid.UUID(inference_run_id) for inference_run_id in inference_run_ids]}
@@ -185,8 +183,8 @@ def generate_pose_2d_query_dict(
     if start is not None or end is not None:
         timestamp_qualifier_dict = dict()
         if start is not None:
-            timestamp_qualifier_dict['$gte'] = start.astimezone(database_tzinfo).replace(tzinfo=None)
+            timestamp_qualifier_dict['$gte'] = start.astimezone(database_tzinfo)
         if end is not None:
-            timestamp_qualifier_dict['$lt'] = end.astimezone(database_tzinfo).replace(tzinfo=None)
+            timestamp_qualifier_dict['$lt'] = end.astimezone(database_tzinfo)
         query_dict['timestamp'] = timestamp_qualifier_dict
     return query_dict
