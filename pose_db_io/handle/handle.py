@@ -112,8 +112,6 @@ class PoseHandle:
 
         poses_2d_list = list()
         for pose_2d_raw in find_iterator:
-            pose_2d_raw['id'] = str(pose_2d_raw['id'])
-            pose_2d_raw['_id'] = str(pose_2d_raw['_id'])
             poses_2d_list.append(Pose2d(**pose_2d_raw))
         return poses_2d_list
 
