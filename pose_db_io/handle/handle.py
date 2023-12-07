@@ -137,7 +137,7 @@ class PoseHandle:
         find_iterator = self.poses_2d_collection.find(query_dict)
         return find_iterator
 
-    def fetch_pose_2d_coverage_by_environment_id(
+    def fetch_pose_2d_coverage_dataframe_by_environment_id(
             self,
             environment_id: Union[str, uuid.UUID]
     ):
