@@ -8,10 +8,25 @@ from pydantic import BaseModel, ConfigDict, Field, field_serializer, UUID4
 from pydantic.functional_validators import AfterValidator
 
 
+class KeypointsFormatEnum(Enum):
+    mpii_15 = "mpii-15"
+    mpii_16 = "mpii-16"
+    coco_17 = "coco-17"
+    coco_18 = "coco-18"
+    body_25 = "body-25"
+    halpe_133 = "halpe-133"
+    halpe_136 = "halpe-136"
+
 class PosePairScoreDistanceMethodEnum(Enum):
     pixels = 'pixels'
     image_frac = 'image_frac'
     threed = '3d'
+
+def rounded_float(v: float) -> float:
+    return round(v, 3)
+
+
+RoundedFloat = Annotated[float, AfterValidator(rounded_float)]
 
 class Pose3dMetadata(BaseModel):
     model_config = ConfigDict(populate_by_name=True, use_enum_values=True)
@@ -51,13 +66,6 @@ class Pose3dMetadata(BaseModel):
     @field_serializer("classroom_date")
     def serialize_classroom_date(self, dt: date, _info):
         return dt.strftime("%Y-%m-%d")
-
-
-def rounded_float(v: float) -> float:
-    return round(v, 3)
-
-
-RoundedFloat = Annotated[float, AfterValidator(rounded_float)]
 
 
 class Pose3dOutput(BaseModel):
