@@ -62,6 +62,10 @@ class DetectorModelCheckpointEnum(Enum):
         "rtmdet_m_8xb32-100e_coco-obj365-person-235e8209"
     )
 
+# def coerce_to_uuid(uuid_like_object):
+#     return uuid.UUID(uuid_like_object)
+
+# FlexibleUUID = Annotated[Union[UUID4, str], AfterValidator(double), AfterValidator(check_squares)]
 
 class Pose2dMetadataCommon(BaseModel):
     model_config = ConfigDict(populate_by_name=True, use_enum_values=True)
@@ -108,7 +112,7 @@ class BoundingBoxOutput(BaseModel):
 class Pose2d(BaseModel):
     model_config = ConfigDict(populate_by_name=True, use_enum_values=True)
 
-    id: str = Field(default_factory=uuid.uuid4, alias="_id")
+    id: UUID4 = Field(default_factory=uuid.uuid4)
     timestamp: datetime
     metadata: Pose2dMetadata
     pose: PoseOutput

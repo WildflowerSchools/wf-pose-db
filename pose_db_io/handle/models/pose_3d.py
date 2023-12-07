@@ -64,7 +64,7 @@ class Pose3dOutput(BaseModel):
 class Pose3d(BaseModel):
     model_config = ConfigDict(populate_by_name=True, use_enum_values=True)
 
-    id: str = Field(default_factory=uuid.uuid4, alias="_id")
+    id: UUID4 = Field(default_factory=uuid.uuid4)
     timestamp: datetime
     metadata: Pose3dMetadata
     pose: Pose3dOutput
