@@ -143,6 +143,21 @@ class PoseHandle:
         find_iterator = self.poses_2d_collection.find(query_dict)
         return find_iterator
 
+    def insert_poses_3d(self, pose_3d_batch: List[Pose3d]):
+        bulk_requests = list(map(lambda p: InsertOne(p.model_dump()), pose_3d_batch))
+        try:
+            logger.debug(
+                f"Inserting {len(bulk_requests)} into Mongo poses_3d database..."
+            )
+            self.poses_3d_collection.bulk_write(bulk_requests, ordered=False)
+            logger.debug(
+                f"Successfully wrote {len(bulk_requests)} records into Mongo poses_3d database..."
+            )
+        except BulkWriteError as e:
+            logger.error(
+                f"Failed writing {len(bulk_requests)} records to Mongo poses_3d database: {e}"
+            )
+
     def cleanup(self):
         if self.client is not None:
             self.client.close()
