@@ -41,25 +41,12 @@ class Pose3dMetadata(BaseModel):
     pose_3d_limits: Tuple[
         Tuple[Tuple[RoundedFloat, RoundedFloat, RoundedFloat], ...],
         Tuple[Tuple[RoundedFloat, RoundedFloat, RoundedFloat], ...],
-    ] = None
-    room_x_limits: Tuple[RoundedFloat, RoundedFloat]
-    room_y_limits: Tuple[RoundedFloat, RoundedFloat]
-    floor_z: RoundedFloat
-    foot_z_limits: Tuple[RoundedFloat, RoundedFloat]
-    knee_z_limits: Tuple[RoundedFloat, RoundedFloat]
-    hip_z_limits: Tuple[RoundedFloat, RoundedFloat]
-    thorax_z_limits: Tuple[RoundedFloat, RoundedFloat]
-    shoulder_z_limits: Tuple[RoundedFloat, RoundedFloat]
-    elbow_z_limits: Tuple[RoundedFloat, RoundedFloat]
-    hand_z_limits: Tuple[RoundedFloat, RoundedFloat]
-    neck_z_limits: Tuple[RoundedFloat, RoundedFloat]
-    head_z_limits: Tuple[RoundedFloat, RoundedFloat]
-    tolerance: RoundedFloat
-    min_keypoint_quality: RoundedFloat
-    min_num_keypoints: int
-    min_pose_quality: RoundedFloat
-    min_pose_pair_score: RoundedFloat
-    max_pose_pair_score: RoundedFloat
+    ]
+    min_keypoint_quality: Optional[RoundedFloat]
+    min_num_keypoints: Optional[int]
+    min_pose_quality: Optional[RoundedFloat]
+    min_pose_pair_score: Optional[RoundedFloat]
+    max_pose_pair_score: Optional[RoundedFloat]
     pose_pair_score_distance_method: PosePairScoreDistanceMethodEnum
     pose_3d_graph_initial_edge_threshold: int
     pose_3d_graph_max_dispersion: RoundedFloat
