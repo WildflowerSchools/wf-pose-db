@@ -44,28 +44,6 @@ class PoseHandle:
                 f"Failed writing {len(bulk_requests)} records to Mongo poses_2d database: {e}"
             )
 
-    def generate_poses_2d_find_iterator(
-        self,
-        inference_run_ids=None,
-        environment_id=None,
-        camera_ids=None,
-        start=None,
-        end=None,
-        database_tzinfo=None,
-    ):
-        if database_tzinfo is None:
-            database_tzinfo = datetime.timezone.utc
-        query_dict = generate_pose_2d_query_dict(
-            inference_run_ids=inference_run_ids,
-            environment_id=environment_id,
-            camera_ids=camera_ids,
-            start=start,
-            end=end,
-            database_tzinfo=database_tzinfo,
-        )
-        find_iterator = self.poses_2d_collection.find(query_dict)
-        return find_iterator
-
     def fetch_poses_2d(
         self,
         inference_run_ids=None,
@@ -115,6 +93,55 @@ class PoseHandle:
             .set_index('pose_2d_id')
         )
         return poses_2d
+
+    def find_poses_2d(
+        self,
+        inference_run_ids=None,
+        environment_id=None,
+        camera_ids=None,
+        start=None,
+        end=None,
+        database_tzinfo=None,
+    ):
+        if database_tzinfo is None:
+            database_tzinfo = datetime.timezone.utc
+        find_iterator = self.generate_poses_2d_find_iterator(
+            inference_run_ids=inference_run_ids,
+            environment_id=environment_id,
+            camera_ids=camera_ids,
+            start=start,
+            end=end,
+            database_tzinfo=database_tzinfo,
+        )
+
+        poses_2d_list = list()
+        for pose_2d_raw in find_iterator:
+            pose_2d_raw['id'] = str(pose_2d_raw['id'])
+            pose_2d_raw['_id'] = str(pose_2d_raw['_id'])
+            poses_2d_list.append(Pose2d(**pose_2d_raw))
+        return poses_2d_list
+
+    def generate_poses_2d_find_iterator(
+        self,
+        inference_run_ids=None,
+        environment_id=None,
+        camera_ids=None,
+        start=None,
+        end=None,
+        database_tzinfo=None,
+    ):
+        if database_tzinfo is None:
+            database_tzinfo = datetime.timezone.utc
+        query_dict = generate_pose_2d_query_dict(
+            inference_run_ids=inference_run_ids,
+            environment_id=environment_id,
+            camera_ids=camera_ids,
+            start=start,
+            end=end,
+            database_tzinfo=database_tzinfo,
+        )
+        find_iterator = self.poses_2d_collection.find(query_dict)
+        return find_iterator
 
     def cleanup(self):
         if self.client is not None:
