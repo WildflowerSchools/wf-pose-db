@@ -135,6 +135,56 @@ class PoseHandle:
         find_iterator = self.poses_2d_collection.find(query_dict)
         return find_iterator
 
+    def fetch_pose_2d_coverage_by_environment_id(
+            self,
+            environment_id: Union[str, uuid.UUID]
+    ):
+        pose_2d_coverage_cursor = self.poses_2d_collection.aggregate(
+            [
+                {
+                    '$match': {
+                        'metadata.environment_id': environment_id if isinstance(environment_id, uuid.UUID) else uuid.UUID(environment_id)
+                    }
+                },
+                {
+                    "$group": {
+                        "_id": {
+                            "metadata": {
+                                "inference_run_created_at": "$metadata.inference_run_created_at",
+                                "inference_run_id": "$metadata.inference_run_id",
+                            }
+                        },
+                        "inference_run_id": {"$first": "$metadata.inference_run_id"},
+                        "inference_run_created_at": {
+                            "$first": "$metadata.inference_run_created_at"
+                        },
+                        "environment_id": {"$first": "$metadata.environment_id"},
+                        "count": {"$sum": 1},
+                        "start": {"$min": "$timestamp"},
+                        "end": {"$max": "$timestamp"},
+                    }
+                },
+                {"$sort": {"start": -1, "inference_run_created_at": -1}},
+            ]
+        )
+        pose_2d_coverage_list = list()
+        for item in pose_2d_coverage_cursor:
+            pose_2d_coverage_list.append(
+                collections.OrderedDict((
+                    ('inference_run_id', str(item['inference_run_id'])),
+                    ('inference_run_created_at', item['inference_run_created_at']),
+                    ('environment_id', str(item['environment_id'])),
+                    ('count', item['count']),
+                    ('start', item['start']),
+                    ('end', item['end']),
+                ))
+            )
+        df_pose_2d_coverage = None
+        if len(pose_2d_coverage_list) > 0:
+            df_pose_2d_coverage = pd.DataFrame(pose_2d_coverage_list)
+
+        return df_pose_2d_coverage
+
     def cleanup(self):
         if self.client is not None:
             self.client.close()
