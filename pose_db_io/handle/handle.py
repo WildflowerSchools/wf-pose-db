@@ -69,13 +69,14 @@ class PoseHandle:
             bounding_box_array = np.asarray(pose_2d_raw['bbox']['bbox'])
             bounding_box = bounding_box_array[:4]
             bounding_box_quality = bounding_box_array[4]
+            pose_quality = np.nanmean(keypoint_quality)
             poses_2d_list.append(collections.OrderedDict((
                 ('pose_2d_id', str(pose_2d_raw['id'])),
                 ('timestamp', pose_2d_raw['timestamp']),
                 ('camera_id', str(pose_2d_raw['metadata']['camera_device_id'])),
                 ('keypoint_coordinates_2d', keypoint_coordinates),
                 ('keypoint_quality_2d', keypoint_quality),
-                ('pose_quality', None),
+                ('pose_quality_2d', pose_quality),
                 ('keypoint_visibility_2d', keypoint_visibility),
                 ('bounding_box', bounding_box),
                 ('bounding_box_quality', bounding_box_quality),
@@ -89,7 +90,10 @@ class PoseHandle:
         if len(poses_2d_list) > 0:
             poses_2d = (
                 pd.DataFrame(poses_2d_list)
-                .sort_values('timestamp')
+                .sort_values([
+                    'timestamp',
+                    'camera_id'
+                ])
                 .set_index('pose_2d_id')
             )
         return poses_2d
@@ -229,6 +233,105 @@ class PoseHandle:
             logger.error(
                 f"Failed writing {len(bulk_requests)} records to Mongo poses_3d database: {e}"
             )
+
+    def fetch_poses_3d_dataframe(
+            self,
+            inference_run_ids=None,
+            environment_id=None,
+            start=None,
+            end=None,
+    ):
+        find_iterator = self.generate_poses_3d_find_iterator(
+            inference_run_ids=inference_run_ids,
+            environment_id=environment_id,
+            start=start,
+            end=end,
+        )
+        poses_3d_list = list()
+        for pose_3d_raw in find_iterator:
+            keypoint_coordinates = np.asarray(pose_3d_raw['pose']['keypoints'])
+            poses_3d_list.append(collections.OrderedDict((
+                ('pose_3d_id', str(pose_3d_raw['id'])),
+                ('timestamp', pose_3d_raw['timestamp']),
+                ('keypoint_coordinates_3d', keypoint_coordinates),
+                ('pose_2d_ids', [str(pose_2d_id) for pose_2d_id in pose_3d_raw['pose_2d_ids']]),
+                ('keypoints_format', pose_3d_raw['metadata']['keypoints_format']),
+                ('inference_run_id', str(pose_3d_raw['metadata']['inference_run_id'])),
+                ('inference_run_created_at', pose_3d_raw['metadata']['inference_run_created_at']),
+            )))
+
+        poses_3d = None
+        if len(poses_3d_list) > 0:
+            poses_3d = (
+                pd.DataFrame(poses_3d_list)
+                .sort_values('timestamp')
+                .set_index('pose_3d_id')
+            )
+        return poses_3d
+
+    def fetch_poses_3d_objects(
+            self,
+            inference_run_ids=None,
+            environment_id=None,
+            start=None,
+            end=None,
+    ):
+        find_iterator = self.generate_poses_3d_find_iterator(
+            inference_run_ids=inference_run_ids,
+            environment_id=environment_id,
+            start=start,
+            end=end,
+        )
+
+        poses_3d_list = list()
+        for pose_3d_raw in find_iterator:
+            poses_3d_list.append(Pose3d(**pose_3d_raw))
+        return poses_3d_list
+
+    def generate_poses_3d_find_iterator(
+            self,
+            inference_run_ids=None,
+            environment_id=None,
+            start=None,
+            end=None
+    ):
+        query_dict = self.generate_pose_3d_query_dict(
+            inference_run_ids=inference_run_ids,
+            environment_id=environment_id,
+            start=start,
+            end=end,
+        )
+        find_iterator = self.poses_3d_collection.find(query_dict)
+        return find_iterator
+
+    @staticmethod
+    def generate_pose_3d_query_dict(
+            inference_run_ids: Optional[Union[List[str], List[uuid.UUID]]] = None,
+            environment_id: Optional[Union[str, uuid.UUID]] = None,
+            start: Optional[datetime.datetime] = None,
+            end: Optional[datetime.datetime] = None
+    ):
+        database_tzinfo = datetime.timezone.utc
+
+        if start is not None and start.tzinfo is None:
+            raise ValueError("generate_pose_2d_query_dict 'start' attribute must be None or timezone aware datetime object")
+
+        if end is not None and end.tzinfo is None:
+            raise ValueError("generate_pose_2d_query_dict 'end' attribute must be None or timezone aware datetime object")
+
+        query_dict = dict()
+        if inference_run_ids is not None:
+            query_dict['metadata.inference_run_id'] = {"$in": [uuid.UUID(inference_run_id) for inference_run_id in inference_run_ids]}
+        if environment_id is not None:
+            query_dict['metadata.environment_id'] = uuid.UUID(environment_id)
+        if start is not None or end is not None:
+            timestamp_qualifier_dict = dict()
+            if start is not None:
+                timestamp_qualifier_dict['$gte'] = start.astimezone(database_tzinfo)
+            if end is not None:
+                timestamp_qualifier_dict['$lt'] = end.astimezone(database_tzinfo)
+            query_dict['timestamp'] = timestamp_qualifier_dict
+        return query_dict
 
     def cleanup(self):
         if self.client is not None:
