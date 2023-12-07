@@ -45,7 +45,7 @@ class PoseHandle:
                 f"Failed writing {len(bulk_requests)} records to Mongo poses_2d database: {e}"
             )
 
-    def fetch_poses_2d(
+    def fetch_poses_2d_dataframe(
             self,
             inference_run_ids=None,
             environment_id=None,
@@ -94,7 +94,7 @@ class PoseHandle:
             )
         return poses_2d
 
-    def find_poses_2d(
+    def fetch_poses_2d_objects(
             self,
             inference_run_ids=None,
             environment_id=None,
