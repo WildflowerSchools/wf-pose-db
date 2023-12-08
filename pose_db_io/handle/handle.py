@@ -224,6 +224,95 @@ class PoseHandle:
             query_dict["timestamp"] = timestamp_qualifier_dict
         return query_dict
 
+    def insert_poses_3d_dataframe(
+        self,
+        poses_3d,
+        inference_id,
+        inference_run_created_at,
+        environment_id,
+        classroom_date,
+        coordinate_space_id,
+        pose_model_id,
+        keypoints_format,
+        pose_3d_limits,
+        min_keypoint_quality,
+        min_num_keypoints,
+        min_pose_quality,
+        min_pose_pair_score,
+        max_pose_pair_score,
+        pose_pair_score_distance_method,
+        pose_3d_graph_initial_edge_threshold,
+        pose_3d_graph_max_dispersion,
+    ):
+        pose_3d_objects = self.convert_poses_3d_dataframe_to_pose3d_objects(
+            poses_3d=poses_3d,
+            inference_id=inference_id,
+            inference_run_created_at=inference_run_created_at,
+            environment_id=environment_id,
+            classroom_date=classroom_date,
+            coordinate_space_id=coordinate_space_id,
+            pose_model_id=pose_model_id,
+            keypoints_format=keypoints_format,
+            pose_3d_limits=pose_3d_limits,
+            min_keypoint_quality=min_keypoint_quality,
+            min_num_keypoints=min_num_keypoints,
+            min_pose_quality=min_pose_quality,
+            min_pose_pair_score=min_pose_pair_score,
+            max_pose_pair_score=max_pose_pair_score,
+            pose_pair_score_distance_method=pose_pair_score_distance_method,
+            pose_3d_graph_initial_edge_threshold=pose_3d_graph_initial_edge_threshold,
+            pose_3d_graph_max_dispersion=pose_3d_graph_max_dispersion,
+        )
+        self.insert_poses_3d(pose_3d_batch=pose_3d_objects)
+
+    @staticmethod
+    def convert_poses_3d_dataframe_to_pose3d_objects(
+        poses_3d,
+        inference_id,
+        inference_run_created_at,
+        environment_id,
+        classroom_date,
+        coordinate_space_id,
+        pose_model_id,
+        keypoints_format,
+        pose_3d_limits,
+        min_keypoint_quality,
+        min_num_keypoints,
+        min_pose_quality,
+        min_pose_pair_score,
+        max_pose_pair_score,
+        pose_pair_score_distance_method,
+        pose_3d_graph_initial_edge_threshold,
+        pose_3d_graph_max_dispersion,
+    ):
+        pose_3d_objects = list()
+        for pose_3d_id, pose_3d_data in poses_3d.iterrows():
+            pose_3d_objects.append(Pose3d(**{
+                'id': pose_3d_id,
+                'timestamp': pose_3d_data['timestamp'],
+                'metadata': {
+                    'inference_run_id': inference_id,
+                    'inference_run_created_at': inference_run_created_at,
+                    'environment_id': environment_id,
+                    'classroom_date': classroom_date,
+                    'coordinate_space_id': coordinate_space_id,
+                    'pose_model_id': pose_model_id,
+                    'keypoints_format': keypoints_format,
+                    'pose_3d_limits': pose_3d_limits,
+                    'min_keypoint_quality': min_keypoint_quality,
+                    'min_num_keypoints': min_num_keypoints,
+                    'min_pose_quality': min_pose_quality,
+                    'min_pose_pair_score': min_pose_pair_score,
+                    'max_pose_pair_score': max_pose_pair_score,
+                    'pose_pair_score_distance_method': pose_pair_score_distance_method,
+                    'pose_3d_graph_initial_edge_threshold': pose_3d_graph_initial_edge_threshold,
+                    'pose_3d_graph_max_dispersion': pose_3d_graph_max_dispersion,
+                },
+                'pose': {'keypoints': pose_3d_data['keypoint_coordinates_3d']},
+                'pose_2d_ids': pose_3d_data['pose_2d_ids']            
+            }))
+        return pose_3d_objects
+
     def insert_poses_3d(self, pose_3d_batch: List[Pose3d]):
         bulk_requests = list(map(lambda p: InsertOne(p.model_dump()), pose_3d_batch))
         try:
