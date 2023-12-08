@@ -44,6 +44,7 @@ class PoseHandle:
         camera_ids=None,
         start=None,
         end=None,
+        remove_inference_run_overlaps=True
     ):
         find_iterator = self.generate_poses_2d_find_iterator(
             inference_run_ids=inference_run_ids,
@@ -85,7 +86,22 @@ class PoseHandle:
         poses_2d = None
         if len(poses_2d_list) > 0:
             poses_2d = pd.DataFrame(poses_2d_list).sort_values(["timestamp", "camera_id"]).set_index("pose_2d_id")
+            if remove_inference_run_overlaps:
+                poses_2d = self.remove_inference_run_overlaps_dataframe(poses_2d)
         return poses_2d
+
+    @staticmethod
+    def remove_inference_run_overlaps_dataframe(poses):
+        poses_without_overlaps = (
+            poses
+            .groupby('timestamp', group_keys=False)
+            .apply(lambda x: x.loc[x['inference_run_created_at'] == x['inference_run_created_at'].max()])
+            .sort_values([
+                'timestamp',
+                'camera_id'
+            ])
+        )
+        return poses_without_overlaps
 
     def fetch_poses_2d_objects(
         self,
@@ -122,52 +138,10 @@ class PoseHandle:
         return find_iterator
 
     def fetch_pose_2d_coverage_dataframe_by_environment_id(self, environment_id: Union[str, uuid.UUID]):
-        pose_2d_coverage_cursor = self.poses_2d_collection.aggregate(
-            [
-                {
-                    "$match": {
-                        "metadata.environment_id": environment_id
-                        if isinstance(environment_id, uuid.UUID)
-                        else uuid.UUID(environment_id)
-                    }
-                },
-                {
-                    "$group": {
-                        "_id": {
-                            "metadata": {
-                                "inference_run_created_at": "$metadata.inference_run_created_at",
-                                "inference_run_id": "$metadata.inference_run_id",
-                            }
-                        },
-                        "inference_run_id": {"$first": "$metadata.inference_run_id"},
-                        "inference_run_created_at": {"$first": "$metadata.inference_run_created_at"},
-                        "environment_id": {"$first": "$metadata.environment_id"},
-                        "count": {"$sum": 1},
-                        "start": {"$min": "$timestamp"},
-                        "end": {"$max": "$timestamp"},
-                    }
-                },
-                {"$sort": {"start": -1, "inference_run_created_at": -1}},
-            ]
+        df_pose_2d_coverage = self.fetch_coverage_dataframe_by_environment_id(
+            environment_id=environment_id,
+            collection=self.poses_2d_collection
         )
-        pose_2d_coverage_list = []
-        for item in pose_2d_coverage_cursor:
-            pose_2d_coverage_list.append(
-                collections.OrderedDict(
-                    (
-                        ("inference_run_id", str(item["inference_run_id"])),
-                        ("inference_run_created_at", item["inference_run_created_at"]),
-                        ("environment_id", str(item["environment_id"])),
-                        ("count", item["count"]),
-                        ("start", item["start"]),
-                        ("end", item["end"]),
-                    )
-                )
-            )
-        df_pose_2d_coverage = None
-        if len(pose_2d_coverage_list) > 0:
-            df_pose_2d_coverage = pd.DataFrame(pose_2d_coverage_list)
-
         return df_pose_2d_coverage
 
     @staticmethod
@@ -207,6 +181,95 @@ class PoseHandle:
                 timestamp_qualifier_dict["$lt"] = end.astimezone(database_tzinfo)
             query_dict["timestamp"] = timestamp_qualifier_dict
         return query_dict
+
+    def insert_poses_3d_dataframe(
+        self,
+        poses_3d,
+        inference_id,
+        inference_run_created_at,
+        environment_id,
+        classroom_date,
+        coordinate_space_id,
+        pose_model_id,
+        keypoints_format,
+        pose_3d_limits,
+        min_keypoint_quality,
+        min_num_keypoints,
+        min_pose_quality,
+        min_pose_pair_score,
+        max_pose_pair_score,
+        pose_pair_score_distance_method,
+        pose_3d_graph_initial_edge_threshold,
+        pose_3d_graph_max_dispersion,
+    ):
+        pose_3d_objects = self.convert_poses_3d_dataframe_to_pose3d_objects(
+            poses_3d=poses_3d,
+            inference_id=inference_id,
+            inference_run_created_at=inference_run_created_at,
+            environment_id=environment_id,
+            classroom_date=classroom_date,
+            coordinate_space_id=coordinate_space_id,
+            pose_model_id=pose_model_id,
+            keypoints_format=keypoints_format,
+            pose_3d_limits=pose_3d_limits,
+            min_keypoint_quality=min_keypoint_quality,
+            min_num_keypoints=min_num_keypoints,
+            min_pose_quality=min_pose_quality,
+            min_pose_pair_score=min_pose_pair_score,
+            max_pose_pair_score=max_pose_pair_score,
+            pose_pair_score_distance_method=pose_pair_score_distance_method,
+            pose_3d_graph_initial_edge_threshold=pose_3d_graph_initial_edge_threshold,
+            pose_3d_graph_max_dispersion=pose_3d_graph_max_dispersion,
+        )
+        self.insert_poses_3d(pose_3d_batch=pose_3d_objects)
+
+    @staticmethod
+    def convert_poses_3d_dataframe_to_pose3d_objects(
+        poses_3d,
+        inference_id,
+        inference_run_created_at,
+        environment_id,
+        classroom_date,
+        coordinate_space_id,
+        pose_model_id,
+        keypoints_format,
+        pose_3d_limits,
+        min_keypoint_quality,
+        min_num_keypoints,
+        min_pose_quality,
+        min_pose_pair_score,
+        max_pose_pair_score,
+        pose_pair_score_distance_method,
+        pose_3d_graph_initial_edge_threshold,
+        pose_3d_graph_max_dispersion,
+    ):
+        pose_3d_objects = list()
+        for pose_3d_id, pose_3d_data in poses_3d.iterrows():
+            pose_3d_objects.append(Pose3d(**{
+                'id': pose_3d_id,
+                'timestamp': pose_3d_data['timestamp'],
+                'metadata': {
+                    'inference_run_id': inference_id,
+                    'inference_run_created_at': inference_run_created_at,
+                    'environment_id': environment_id,
+                    'classroom_date': classroom_date,
+                    'coordinate_space_id': coordinate_space_id,
+                    'pose_model_id': pose_model_id,
+                    'keypoints_format': keypoints_format,
+                    'pose_3d_limits': pose_3d_limits,
+                    'min_keypoint_quality': min_keypoint_quality,
+                    'min_num_keypoints': min_num_keypoints,
+                    'min_pose_quality': min_pose_quality,
+                    'min_pose_pair_score': min_pose_pair_score,
+                    'max_pose_pair_score': max_pose_pair_score,
+                    'pose_pair_score_distance_method': pose_pair_score_distance_method,
+                    'pose_3d_graph_initial_edge_threshold': pose_3d_graph_initial_edge_threshold,
+                    'pose_3d_graph_max_dispersion': pose_3d_graph_max_dispersion,
+                },
+                'pose': {'keypoints': pose_3d_data['keypoint_coordinates_3d']},
+                'pose_2d_ids': pose_3d_data['pose_2d_ids']            
+            }))
+        return pose_3d_objects
 
     def insert_poses_3d(self, pose_3d_batch: List[Pose3d]):
         bulk_requests = list(map(lambda p: InsertOne(p.model_dump()), pose_3d_batch))
@@ -281,6 +344,13 @@ class PoseHandle:
         find_iterator = self.poses_3d_collection.find(query_dict)
         return find_iterator
 
+    def fetch_pose_3d_coverage_dataframe_by_environment_id(self, environment_id: Union[str, uuid.UUID]):
+        df_pose_3d_coverage = self.fetch_coverage_dataframe_by_environment_id(
+            environment_id=environment_id,
+            collection=self.poses_3d_collection
+        )
+        return df_pose_3d_coverage
+
     @staticmethod
     def generate_pose_3d_query_dict(
         inference_run_ids: Optional[Union[List[str], List[uuid.UUID]]] = None,
@@ -315,6 +385,85 @@ class PoseHandle:
                 timestamp_qualifier_dict["$lt"] = end.astimezone(database_tzinfo)
             query_dict["timestamp"] = timestamp_qualifier_dict
         return query_dict
+
+    @staticmethod
+    def fetch_coverage_dataframe_by_environment_id(environment_id: Union[str, uuid.UUID], collection):
+        pose_coverage_cursor = collection.aggregate(
+            [
+                {
+                    "$match": {
+                        "metadata.environment_id": environment_id
+                        if isinstance(environment_id, uuid.UUID)
+                        else uuid.UUID(environment_id)
+                    }
+                },
+                {
+                    "$group": {
+                        "_id": {
+                            "metadata": {
+                                "inference_run_created_at": "$metadata.inference_run_created_at",
+                                "inference_run_id": "$metadata.inference_run_id",
+                            }
+                        },
+                        "inference_run_id": {"$first": "$metadata.inference_run_id"},
+                        "inference_run_created_at": {"$first": "$metadata.inference_run_created_at"},
+                        "environment_id": {"$first": "$metadata.environment_id"},
+                        "classroom_date": {"$first": "$metadata.classroom_date"},
+                        "count": {"$sum": 1},
+                        "start": {"$min": "$timestamp"},
+                        "end": {"$max": "$timestamp"},
+                    }
+                },
+                {"$sort": {"start": 1, "inference_run_created_at": 1}},
+            ]
+        )
+        pose_coverage_list = []
+        for item in pose_coverage_cursor:
+            pose_coverage_list.append(
+                collections.OrderedDict(
+                    (
+                        ("inference_run_id", str(item["inference_run_id"])),
+                        ("inference_run_created_at", item["inference_run_created_at"]),
+                        ("environment_id", str(item["environment_id"])),
+                        ("classroom_date", item["classroom_date"]),
+                        ("count", item["count"]),
+                        ("start", item["start"]),
+                        ("end", item["end"]),
+                    )
+                )
+            )
+        df_pose_coverage = None
+        if len(pose_coverage_list) > 0:
+            df_pose_coverage = (
+                pd.DataFrame(pose_coverage_list)
+                .sort_values([
+                    'start',
+                    'inference_run_created_at'
+                ])
+            )
+        df_pose_coverage = PoseHandle.add_inference_run_group_ids(df_pose_coverage)
+        return df_pose_coverage
+
+    @staticmethod
+    def add_inference_run_group_ids(coverage_summary):
+        coverage_summary = (
+            coverage_summary
+            .copy()
+            .sort_values('start')
+        )
+        previous_group_id = uuid.uuid4()
+        previous_end = None
+        group_ids = list()
+        for _, row in coverage_summary.iterrows():
+            if previous_end is None or row['start'] - previous_end <= datetime.timedelta(microseconds=100000):
+                group_id = previous_group_id
+            else:
+                group_id = uuid.uuid4()
+            group_ids.append(group_id)
+            previous_group_id = group_id
+            previous_end = row['end']
+        coverage_summary['inference_run_group_id'] = group_ids
+        return coverage_summary
 
     def cleanup(self):
         if self.client is not None:
