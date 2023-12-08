@@ -44,6 +44,7 @@ class PoseHandle:
         camera_ids=None,
         start=None,
         end=None,
+        remove_inference_run_overlaps=True
     ):
         find_iterator = self.generate_poses_2d_find_iterator(
             inference_run_ids=inference_run_ids,
@@ -85,7 +86,22 @@ class PoseHandle:
         poses_2d = None
         if len(poses_2d_list) > 0:
             poses_2d = pd.DataFrame(poses_2d_list).sort_values(["timestamp", "camera_id"]).set_index("pose_2d_id")
+            if remove_inference_run_overlaps:
+                poses_2d = self.remove_inference_run_overlaps_dataframe(poses_2d)
         return poses_2d
+
+    @staticmethod
+    def remove_inference_run_overlaps_dataframe(poses):
+        poses_without_overlaps = (
+            poses
+            .groupby('timestamp', group_keys=False)
+            .apply(lambda x: x.loc[x['inference_run_created_at'] == x['inference_run_created_at'].max()])
+            .sort_values([
+                'timestamp',
+                'camera_id'
+            ])
+        )
+        return poses_without_overlaps
 
     def fetch_poses_2d_objects(
         self,
