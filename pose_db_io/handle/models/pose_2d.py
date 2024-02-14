@@ -29,6 +29,8 @@ class PoseModelConfigEnum(Enum):
     rtmpose_m_8xb256_420e_body8_384x288 = "rtmpose-m_8xb256-420e_body8-384x288"
     rtmpose_l_8xb256_420e_body8_256x192 = "rtmpose-l_8xb256-420e_body8-256x192"
     rtmpose_l_8xb256_420e_body8_384x288 = "rtmpose-l_8xb256-420e_body8-384x288"
+    rtmo_l_16xb16_600e_body7_640x640 = "rtmo_l_16xb16_600e_body7_640x640"
+    rtmo_m_16xb16_600e_body7_640x640 = "rtmo-m_16xb16-600e_body7-640x640"
 
 
 class PoseModelCheckpointEnum(Enum):
@@ -47,6 +49,19 @@ class PoseModelCheckpointEnum(Enum):
     rtmpose_l_simcc_body7_pt_body7_420e_384x288_3f5a1437_20230504 = (
         "rtmpose-l_simcc-body7_pt-body7_420e-384x288-3f5a1437_20230504"
     )
+    rtmpose_l_simcc_body7_pt_body7_420e_384x288_3f5a1437_20230504_tensorrt_dynamic_384x288_batch = (
+        "rtmpose_l_simcc_body7_pt_body7_420e_384x288_3f5a1437_20230504_tensorrt_dynamic_384x288_batch"
+    )
+    rtmo_l_16xb16_600e_body7_640x640_b37118ce_20231211 = (
+        "rtmo_l_16xb16_600e_body7_640x640_b37118ce_20231211"
+    )
+    rtmo_m_16xb16_600e_body7_640x640_39e78cc4_20231211 = (
+        "rtmo_m_16xb16_600e_body7_640x640_39e78cc4_20231211"
+    )
+
+
+class PoseModelDeploymentConfigEnum(Enum):
+    tensorrt_simcc_dynamic_384x288_batch = "tensorrt_simcc_dynamic_384x288_batch"
 
 
 class DetectorModelConfigEnum(Enum):
@@ -57,12 +72,25 @@ class DetectorModelConfigEnum(Enum):
 class DetectorModelCheckpointEnum(Enum):
     rtmdet_nano_8xb32_100e_coco_obj365_person_05d8511e = "rtmdet_nano_8xb32-100e_coco-obj365-person-05d8511e"
     rtmdet_m_8xb32_100e_coco_obj365_person_235e8209 = "rtmdet_m_8xb32-100e_coco-obj365-person-235e8209"
+    rtmdet_m_8xb32_100e_coco_obj365_person_235e8209_tensorrt_static_640x640 = "rtmdet_m_8xb32_100e_coco_obj365_person_235e8209_tensorrt_static_640x640"
+    rtmdet_m_8xb32_100e_coco_obj365_person_235e8209_tensorrt_static_640x640_batch = "rtmdet_m_8xb32_100e_coco_obj365_person_235e8209_tensorrt_static_640x640_batch"
+    rtmdet_m_8xb32_100e_coco_obj365_person_235e8209_tensorrt_static_640x640_fp16_batch = "rtmdet_m_8xb32_100e_coco_obj365_person_235e8209_tensorrt_static_640x640_fp16_batch"
+
+
+class DetectorModelDeploymentConfigEnum(Enum):
+    tensorrt_static_640x640 = "tensorrt_static_640x640"
+    tensorrt_dynamic_640x640_batch = "tensorrt_dynamic_640x640_batch"
+    tensorrt_dynamic_640x640_fp16_batch = "tensorrt_dynamic_640x640_fp16_batch"
 
 
 # def coerce_to_uuid(uuid_like_object):
 #     return uuid.UUID(uuid_like_object)
 
 # FlexibleUUID = Annotated[Union[UUID4, str], AfterValidator(double), AfterValidator(check_squares)]
+
+class PoseEstimatorType(Enum):
+    top_down = "top_down"
+    one_stage = "one_stage"
 
 
 class Pose2dMetadataCommon(BaseModel):
@@ -76,8 +104,10 @@ class Pose2dMetadataCommon(BaseModel):
     bounding_box_format: BoundingBoxFormatEnum
     pose_model_config: PoseModelConfigEnum
     pose_model_checkpoint: PoseModelCheckpointEnum
-    detection_model_config: DetectorModelConfigEnum
-    detection_model_checkpoint: DetectorModelCheckpointEnum
+    pose_model_deployment_config: Optional[PoseModelDeploymentConfigEnum] = Field(default=None)
+    detection_model_config: Optional[DetectorModelConfigEnum]
+    detection_model_checkpoint: Optional[DetectorModelCheckpointEnum]
+    detection_model_deployment_config: Optional[DetectorModelDeploymentConfigEnum] = Field(default=None)
 
     @field_serializer("classroom_date")
     def serialize_classroom_date(self, dt: date, _info):
