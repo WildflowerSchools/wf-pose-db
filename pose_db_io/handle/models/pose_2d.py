@@ -23,6 +23,12 @@ class KeypointsFormatEnum(Enum):
     halpe_136 = "halpe-136"
 
 
+class ModelRuntime(Enum):
+    pytorch = "pytorch"
+    onnx = "onnx"
+    tensorrt = "tensorrt"
+
+
 class PoseModelConfigEnum(Enum):
     rtmpose_s_8xb256_420e_body8_256x192 = "rtmpose-s_8xb256-420e_body8-256x192"
     rtmpose_m_8xb256_420e_body8_256x192 = "rtmpose-m_8xb256-420e_body8-256x192"
@@ -55,6 +61,18 @@ class PoseModelCheckpointEnum(Enum):
     rtmo_l_16xb16_600e_body7_640x640_b37118ce_20231211 = (
         "rtmo_l_16xb16_600e_body7_640x640_b37118ce_20231211"
     )
+    rtmo_l_16xb16_600e_body7_640x640_b37118ce_20231211_onnx = (
+        "rtmo_l_16xb16_600e_body7_640x640_b37118ce_20231211_onnx"
+    )
+    rtmo_l_16xb16_600e_body7_640x640_b37118ce_20231211_onnx_fp16 = (
+        "rtmo_l_16xb16_600e_body7_640x640_b37118ce_20231211_onnx_fp16"
+    )
+    rtmo_l_16xb16_600e_body7_640x640_b37118ce_20231211_tensorrt_fp16_rtx2080 = (
+        "rtmo_l_16xb16_600e_body7_640x640_b37118ce_20231211_tensorrt_fp16_rtx2080"
+    )
+    rtmo_l_16xb16_600e_body7_640x640_b37118ce_20231211_tensorrt_fp16_v100 = (
+        "rtmo_l_16xb16_600e_body7_640x640_b37118ce_20231211_tensorrt_fp16_v100"
+    )
     rtmo_m_16xb16_600e_body7_640x640_39e78cc4_20231211 = (
         "rtmo_m_16xb16_600e_body7_640x640_39e78cc4_20231211"
     )
@@ -62,6 +80,9 @@ class PoseModelCheckpointEnum(Enum):
 
 class PoseModelDeploymentConfigEnum(Enum):
     tensorrt_simcc_dynamic_384x288_batch = "tensorrt_simcc_dynamic_384x288_batch"
+    pose_detection_rtmo_onnxruntime_dynamic = "pose-detection_rtmo_onnxruntime_dynamic"
+    pose_detection_rtmo_onnxruntime_dynamic_fp16 = "pose-detection_rtmo_onnxruntime_dynamic_fp16"
+    pose_detection_rtmo_tensorrt_fp16_dynamic_640x640 = "pose-detection_rtmo_tensorrt-fp16_dynamic-640x640"
 
 
 class DetectorModelConfigEnum(Enum):
