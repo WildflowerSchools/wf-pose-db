@@ -4,7 +4,7 @@ dynamic = ["version"]
 
 [tool.poetry]
 name = "wf-pose-db-io"
-version = "0.1.3"
+version = "0.1.4"
 description = "Tools for working with data in Wildflower's pose database"
 authors = ["btalberg <ben.talberg@gmail.com>", "Theodore Quinn <ted.quinn@wildflowerschools.org>"]
 maintainers = ["btalberg <ben.talberg@gmail.com>", "Theodore Quinn <ted.quinn@wildflowerschools.org>"]
