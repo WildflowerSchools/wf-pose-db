@@ -73,6 +73,12 @@ class PoseModelCheckpointEnum(Enum):
     rtmo_l_16xb16_600e_body7_640x640_b37118ce_20231211_tensorrt_fp16_v100 = (
         "rtmo_l_16xb16_600e_body7_640x640_b37118ce_20231211_tensorrt_fp16_v100"
     )
+    rtmo_l_16xb16_600e_body7_640x640_b37118ce_20231211_tensorrt_fp16_a10g = (
+        "rtmo_l_16xb16_600e_body7_640x640_b37118ce_20231211_tensorrt_fp16_a10g"
+    )
+    rtmo_l_16xb16_600e_body7_640x640_b37118ce_20231211_tensorrt_fp16_t4 = (
+        "rtmo_l_16xb16_600e_body7_640x640_b37118ce_20231211_tensorrt_fp16_t4"
+    )
     rtmo_m_16xb16_600e_body7_640x640_39e78cc4_20231211 = (
         "rtmo_m_16xb16_600e_body7_640x640_39e78cc4_20231211"
     )
